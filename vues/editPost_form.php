@@ -1,0 +1,53 @@
+<div class="container" style="display: block; margin-top: 3vh;">
+    <?php
+    if ($_SESSION['message']['type'] != null) { ?>
+        <div class="alert alert-<?= $_SESSION['message']['type'] ?> alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <?= $_SESSION['message']['content'] ?>
+        </div>
+
+    <?php
+        $_SESSION['message'] = [
+            'type' => null,
+            'content' => null
+        ];
+    }
+    ?>
+    <h1>Modifier un post</h1>
+
+    <!-- Formulaire de création de posts -->
+    <form method="POST" action="index.php?uc=post&action=validateEdit" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="idDescriptionPost">Description</label>
+            <textarea class="form-control" id="idDescriptionPost" rows="5" name="descriptionPost"><?= $post->getCommentairePost() ?></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Fichiers actuels</label>
+            <div style="display: flex; flex-direction: row; flex-wrap: wrap; flex-flow :center; width: 100%">
+            <?php
+            foreach (Media::getAllMediasByPostId($idPost) as $media) {
+                switch (explode("/", $media->getTypeMedia())[0]) {
+                    case 'image':
+            ?>
+                        <div style="border: 1px solid black; width: 33.3%">
+                            <img width="100%" src="./assets/medias/<?= $media->getNomFichierMedia() ?>" alt="image">
+                        </div>
+                    <?php
+                        break;
+
+                }
+                echo '<br>';
+            }
+            ?>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="idFile">Fichiers</label>
+            <input type="file" class="form-control-file" id="idFile" accept="image/jpeg, image/pngs" multiple name="filesPost[]">
+        </div>
+
+        <input class="btn btn-success" type="submit" value="Valider">
+    </form>
+</div>
+<?php Media::CountAllMediasPerPost($_SESSION['idEditPost']) ?>
