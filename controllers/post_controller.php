@@ -13,11 +13,10 @@ switch ($action) {
         // traite les données du formulaie (validation formulaire)
     case 'validate':
         // récupéraion de la description
-        $descriptionPost = filter_input(INPUT_POST, 'descriptionPost', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $descriptionPost = filter_input(INPUT_POST, 'descriptionPost', FILTER_SANITIZE_SPECIAL_CHARS);
         // récupération des fichiers
         $fichiersArray = $_FILES["filesPost"];
-
-
+   
         // verification si les champs ont été remplis
         if ($descriptionPost != "" && $fichiersArray['name'][0] != "") {
 
@@ -27,11 +26,12 @@ switch ($action) {
             $newImagesArray = [];
             for ($i = 0; $i < count($fichiersArray['name']); $i++) {
 
+
                 // vérifier si le fichier est une image
-                if (explode("/", $fichiersArray['type'][$i])[0] != "image") {
+                if (explode("/", $fichiersArray['type'][$i])[0] != "image" && explode("/", $fichiersArray['type'][$i])[0] != "video" && explode("/", $fichiersArray['type'][$i])[0] != "audio") {
                     $_SESSION['message'] = [
                         'type' => "danger",
-                        'content' => "Les fichiers ne peuvent être que des images"
+                        'content' => "Les fichiers ne peuvent être que des images, vidéos ou audio !"
                     ];
                     header('Location: index.php?uc=post&action=show');
                 }
@@ -72,7 +72,7 @@ switch ($action) {
             PDOBlogCfpt::getInstance()->beginTransaction();
 
             // on crée le post dans la base de données
-            $post = new Post();
+            $post = new Post(); 
             $post->setCommentairePost($descriptionPost)
                 ->setCreationDatePost($currentDate)
                 ->setModificationDatePost($currentDate);
@@ -85,7 +85,7 @@ switch ($action) {
                     $randomName = Media::GenerateRandomImageName($dirFile) . "." . explode("/", $imageArray['type'])[1];
 
                     while (file_exists($dirFile . $randomName)) {
-                        $randomName = Media::GenerateRandomImageName() . "." . explode("/", $imageArray['type'])[1]; 
+                        $randomName = Media::GenerateRandomImageName() . "." . explode("/", $imageArray['type'])[1];
                     }
 
                     $filepath = $dirFile . $randomName;
@@ -132,7 +132,7 @@ switch ($action) {
                 'type' => "danger",
                 'content' => "Veuillez remplir tous les champs !"
             ];
-            header('Location: index.php?uc=post&action=show');
+            //header('Location: index.php?uc=post&action=show');
         }
         break;
 }

@@ -193,15 +193,11 @@ class Media
 
     public static function GenerateRandomImageName()
     {
-        $log_directory = 'C:\wamp64\www\BlogCfpt\images';
 
         $alphabet = range('a', 'z');
         $newImageName = "";
         for ($i = 0; $i < 26; $i++) {
             $newImageName .= $alphabet[rand(0, 25)];
-        }
-        foreach(glob($log_directory.'/*.*') as $file) {
-            var_dump($file);
         }
         
         return $newImageName;

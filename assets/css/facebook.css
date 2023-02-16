@@ -22,10 +22,15 @@ hr {
   border-color:#dedede;
 }
 
-.wrapper, .row {
+.wrapper {
    height: 100%;
    margin-left:0;
    margin-right:0;
+}
+
+.row {
+    margin-left: 0;
+    margin-right: 0;
 }
 
 .wrapper:before, .wrapper:after,

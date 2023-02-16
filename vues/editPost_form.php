@@ -44,7 +44,7 @@
         </div>
         <div class="form-group">
             <label for="idFile">Fichiers</label>
-            <input type="file" class="form-control-file" id="idFile" accept="image/jpeg, image/pngs" multiple name="filesPost[]">
+            <input type="file" class="form-control-file" id="idFile" accept="image/*, video/*, audio/*" multiple name="filesPost[]">
         </div>
 
         <input class="btn btn-success" type="submit" value="Valider">
