@@ -133,7 +133,7 @@ class Media
 
     /**
      * Get the value of compteurMedia
-     */ 
+     */
     public function getCompteurMedia()
     {
         return $this->compteurMedia;
@@ -143,7 +143,7 @@ class Media
      * Set the value of compteurMedia
      *
      * @return  self
-     */ 
+     */
     public function setCompteurMedia($compteurMedia)
     {
         $this->compteurMedia = $compteurMedia;
@@ -184,7 +184,24 @@ class Media
 
     }
 
-       
+    public static function DeleteMedia($idMedia)
+    {
+        $req = PDOBlogCfpt::getInstance()->prepare("DELETE FROM media WHERE idMedia = :idMedia");
+        $req->bindParam(":idMedia", $idMedia);
+        $req->execute();
+    }
+
+    // récupère le nom du fichier en fonction de son id
+    public static function GetMediaNameById($idMedia)
+    {
+        $req = PDOBlogCfpt::getInstance()->prepare("SELECT nomFichierMedia FROM media WHERE idMedia = :idMedia");
+        $req->bindParam(":idMedia", $idMedia);
+        $req->execute();
+        $result = $req->fetch();
+        return $result['nomFichierMedia'];
+    }
+
+
     public static function ConvertOctetsToMO($octets)
     {
         // 1mo = 1 048 576 octets
@@ -199,7 +216,7 @@ class Media
         for ($i = 0; $i < 26; $i++) {
             $newImageName .= $alphabet[rand(0, 25)];
         }
-        
+
         return $newImageName;
     }
 
@@ -212,6 +229,4 @@ class Media
         $result = $req->fetch();
         return $result->getCompteurMedia();
     }
-
 }
-?>
