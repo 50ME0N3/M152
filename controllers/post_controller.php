@@ -17,123 +17,7 @@ switch ($action) {
         // récupération des fichiers
         $fichiersArray = $_FILES["filesPost"];
 
-        // verification si les champs ont été remplis
-        if ($descriptionPost != "" && $fichiersArray['name'][0] != "") {
-
-            $totalMo = 0;
-
-            // récupérer les fichiers
-            $newImagesArray = [];
-            for ($i = 0; $i < count($fichiersArray['name']); $i++) {
-
-
-                // vérifier si le fichier est une image
-                if (explode("/", $fichiersArray['type'][$i])[0] != "image" && explode("/", $fichiersArray['type'][$i])[0] != "video" && explode("/", $fichiersArray['type'][$i])[0] != "audio") {
-                    $_SESSION['message'] = [
-                        'type' => "danger",
-                        'content' => "Les fichiers ne peuvent être que des images, vidéos ou audio !"
-                    ];
-                    header('Location: index.php?uc=post&action=show');
-                }
-
-
-                $fileMo = Media::ConvertOctetsToMO($fichiersArray['size'][$i]);
-                // vérifie la taille de chaque image afin de ne pas dépacer 3 Mo
-                if ($fileMo > MAX_FILE_SIZE) {
-                    $_SESSION['message'] = [
-                        'type' => "danger",
-                        'content' => "Chaque image doit faire moins de 3 Mo !"
-                    ];
-                    header('Location: index.php?uc=post&action=show');
-                } else {
-                    $totalMo .= $fileMo;
-                }
-
-                // vérification de la taille totale de tous les fichiers afin de ne pas dépacer 70 Mo
-                if ($totalMo > TOTAL_MAX_SIZE) {
-                    $_SESSION['message'] = [
-                        'type' => "danger",
-                        'content' => "Le total des fichiers doit faire moins de 70 Mo !"
-                    ];
-                    header('Location: index.php?uc=post&action=show');
-                }
-
-                $newImagesArray[$i] = [
-                    "name" => $fichiersArray['name'][$i],
-                    "type" => $fichiersArray['type'][$i],
-                    "tmp_name" => $fichiersArray['tmp_name'][$i],
-                    "size" => $fichiersArray['size'][$i]
-                ];
-            }
-
-            $currentDate = date("Y/m/d/H/i/s");
-
-            // Début de la transaction
-            PDOBlogCfpt::getInstance()->beginTransaction();
-
-            // on crée le post dans la base de données
-            $post = new Post();
-            $post->setCommentairePost($descriptionPost)
-                ->setCreationDatePost($currentDate)
-                ->setModificationDatePost($currentDate);
-            $idPost = Post::AddPost($post);
-
-            // on crée les médias dans la base de données
-            $dirFile = "./assets/medias/";
-            try {
-                foreach ($newImagesArray as $imageArray) {
-                    $randomName = Media::GenerateRandomImageName($dirFile) . "." . explode("/", $imageArray['type'])[1];
-
-                    while (file_exists($dirFile . $randomName)) {
-                        $randomName = Media::GenerateRandomImageName() . "." . explode("/", $imageArray['type'])[1];
-                    }
-
-                    $filepath = $dirFile . $randomName;
-
-                    if (move_uploaded_file($imageArray['tmp_name'], $filepath)) {
-                        $media = new Media();
-                        $media->setTypeMedia($imageArray['type'])
-                            ->setNomFichierMedia($randomName)
-                            ->setCreationDate($currentDate)
-                            ->setModificationDate($currentDate)
-                            ->setIdPost($idPost);
-                        Media::AddMedia($media);
-                    } else {
-                        PDOBlogCfpt::getInstance()->rollBack();
-                        $_SESSION['message'] = [
-                            'type' => "danger",
-                            'content' => "Une image n'a pas pu être publié !"
-                        ];
-                        header('Location: index.php?uc=post&action=show');
-                    }
-                }
-            } catch (Exception $e) {
-
-                PDOBlogCfpt::getInstance()->rollBack();
-                $_SESSION['message'] = [
-                    'type' => "danger",
-                    'content' => "Une image n'a pas pu être publié !"
-                ];
-                header('Location: index.php?uc=post&action=show');
-            }
-
-            // on push les infos dans base de donnée avec le commit
-            PDOBlogCfpt::getInstance()->commit();
-
-            // message de success de création du post et des médias
-            $_SESSION['message'] = [
-                'type' => "success",
-                'content' => "Votre post a bien été publié !"
-            ];
-            header('Location: index.php?uc=post&action=show');
-        } else {
-            // retourne un message d'erreur si les champs ne sonts pas remplis
-            $_SESSION['message'] = [
-                'type' => "danger",
-                'content' => "Veuillez remplir tous les champs !"
-            ];
-            header('Location: index.php?uc=post&action=show');
-        }
+        createPost($descriptionPost, $fichiersArray);
         break;
 
 
@@ -188,138 +72,7 @@ switch ($action) {
         // récupération des fichiers
         $fichiersArray = $_FILES["filesPost"];
 
-
-        // verification si les champs ont été remplis
-        if ($descriptionPost != "") {
-
-
-            $totalMo = 0;
-
-            if ($fichiersArray['name'][0] != "") {
-                // récupérer les fichiers
-                $newImagesArray = [];
-                for ($i = 0; $i < count($fichiersArray['name']); $i++) {
-
-                    // vérifier si le fichier est une image
-                    if (explode("/", $fichiersArray['type'][$i])[0] != "image" && explode("/", $fichiersArray['type'][$i])[0] != "video" && explode("/", $fichiersArray['type'][$i])[0] != "audio") {
-                        $_SESSION['message'] = [
-                            'type' => "danger",
-                            'content' => "Les fichiers ne peuvent être que des images, vidéos ou audio !"
-                        ];
-                        header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
-                    }
-
-
-                    $fileMo = Media::ConvertOctetsToMO($fichiersArray['size'][$i]);
-                    // vérifie la taille de chaque image afin de ne pas dépacer 3 Mo
-                    if ($fileMo > 3) {
-                        $_SESSION['message'] = [
-                            'type' => "danger",
-                            'content' => "Chaque image doit faire moins de 3 Mo !"
-                        ];
-                        header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
-                    } else {
-                        $totalMo .= $fileMo;
-                    }
-
-                    // vérification de la taille totale de tous les fichiers afin de ne pas dépacer 70 Mo
-                    if ($totalMo > 70) {
-                        $_SESSION['message'] = [
-                            'type' => "danger",
-                            'content' => "Le total des fichiers doit faire moins de 70 Mo !"
-                        ];
-                        header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
-                    }
-
-                    $newImagesArray[$i] = [
-                        "name" => $fichiersArray['name'][$i],
-                        "type" => $fichiersArray['type'][$i],
-                        "tmp_name" => $fichiersArray['tmp_name'][$i],
-                        "size" => $fichiersArray['size'][$i]
-                    ];
-                }
-            }
-
-
-
-            if (intval(Media::CountAllMediasPerPost($_SESSION['idEditPost'])) > 0 || $fichiersArray['name'][0] != "") {
-                $currentDate = date("Y/m/d/H/i/s");
-
-                // Début de la transaction
-                PDOBlogCfpt::getInstance()->beginTransaction();
-                try {
-                    // on crée le post dans la base de données
-                    $post = new Post();
-                    $post->setCommentairePost($descriptionPost)
-                        ->setModificationDatePost($currentDate);
-                    Post::UpdatePost($post);
-                    $idPost = $_SESSION['idEditPost'];
-
-                    // on crée les médias dans la base de données
-                    $dirFile = "./assets/medias/";
-                    foreach ($newImagesArray as $imageArray) {
-                        $randomName = Media::GenerateRandomImageName() . "." . explode("/", $imageArray['type'])[1];
-
-                        while (file_exists($dirFile . $randomName)) {
-                            $randomName = Media::GenerateRandomImageName() . "." . explode("/", $imageArray['type'])[1];
-                        }
-
-                        $filepath = $dirFile . $randomName;
-
-                        if (move_uploaded_file($imageArray['tmp_name'], $filepath)) {
-                            $media = new Media();
-                            $media->setTypeMedia($imageArray['type'])
-                                ->setNomFichierMedia($randomName)
-                                ->setCreationDate($currentDate)
-                                ->setModificationDate($currentDate)
-                                ->setIdPost($idPost);
-                            Media::AddMedia($media);
-                        } else {
-                            // si il y a un fichier qui ne se push pas rollback et cancel les requêtes
-                            PDOBlogCfpt::getInstance()->rollBack();
-                            $_SESSION['message'] = [
-                                'type' => "danger",
-                                'content' => "Une image n'a pas pu être publié !"
-                            ];
-                            header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
-                        }
-                    }
-                } catch (Exception $e) {
-                    PDOBlogCfpt::getInstance()->rollBack();
-                    $_SESSION['message'] = [
-                        'type' => "danger",
-                        'content' => "Une image n'a pas pu être publié !"
-                    ];
-                    header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
-                }
-            } else {
-                $_SESSION['message'] = [
-                    'type' => "danger",
-                    'content' => "Merci de choisir au moins une image pour le post !"
-                ];
-                header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
-            }
-
-            // on push les infos dans base de donnée avec le commit
-            PDOBlogCfpt::getInstance()->commit();
-
-            // message de success de création du post et des médias
-            $_SESSION['message'] = [
-                'type' => "success",
-                'content' => "Le post à bien été modifié et tous les fichiers ont été importés"
-            ];
-            header('Location: index.php');
-        } else {
-            // retourne un message d'erreur si les champs ne sonts pas remplis
-            $_SESSION['message'] = [
-                'type' => "danger",
-                'content' => "Merci de remplir tous les champs !"
-            ];
-            header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
-        }
-
-
-        $_SESSION['idEditPost'] = null;
+        createPost($descriptionPost, $fichiersArray);
         break;
 
         // supprime un media dans le formulaire de modification de post
@@ -346,7 +99,152 @@ switch ($action) {
         header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
         break;
 
+    case 'UploadWithAjax':
+        $fichiersArray = $_FILES["file"];
+        $descriptionPost = filter_input(INPUT_POST, 'description', FILTER_SANITIZE_STRING);
+        include '../models/Media.php';
+        include '../models/Post.php';
+        include '../models/PDOBlogCfpt.php';
+
+        createPost($descriptionPost, $fichiersArray);
+        break;
+
     default:
         include 'vues/erreur404.php'; // affiche la page d'erreur 404 si le lien n'est pas valide
         break;
+}
+
+function createPost($descriptionPost, $fichiersArray)
+{
+    // verification si les champs ont été remplis
+    if ($descriptionPost != "") {
+
+
+        $totalMo = 0;
+
+        if ($fichiersArray['name'][0] != "") {
+            // récupérer les fichiers
+            $newImagesArray = [];
+            for ($i = 0; $i < count($fichiersArray['name']); $i++) {
+
+                // vérifier si le fichier est une image
+                if (explode("/", $fichiersArray['type'][$i])[0] != "image" && explode("/", $fichiersArray['type'][$i])[0] != "video" && explode("/", $fichiersArray['type'][$i])[0] != "audio") {
+                    $_SESSION['message'] = [
+                        'type' => "danger",
+                        'content' => "Les fichiers ne peuvent être que des images, vidéos ou audio !"
+                    ];
+                    header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
+                }
+
+
+                $fileMo = Media::ConvertOctetsToMO($fichiersArray['size'][$i]);
+                // vérifie la taille de chaque image afin de ne pas dépacer 3 Mo
+                if ($fileMo > 3) {
+                    $_SESSION['message'] = [
+                        'type' => "danger",
+                        'content' => "Chaque image doit faire moins de 3 Mo !"
+                    ];
+                    header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
+                } else {
+                    $totalMo .= $fileMo;
+                }
+
+                // vérification de la taille totale de tous les fichiers afin de ne pas dépacer 70 Mo
+                if ($totalMo > 70) {
+                    $_SESSION['message'] = [
+                        'type' => "danger",
+                        'content' => "Le total des fichiers doit faire moins de 70 Mo !"
+                    ];
+                    header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
+                }
+                $tkt = $fichiersArray['tmp_name'][$i];
+                $newImagesArray[$i] = [
+                    "name" => $fichiersArray['name'][$i],
+                    "type" => $fichiersArray['type'][$i],
+                    "tmp_name" => $fichiersArray['tmp_name'][$i],
+                    "size" => $fichiersArray['size'][$i]
+                ];
+            }
+        }
+
+
+
+        if (intval(Media::CountAllMediasPerPost($_SESSION['idEditPost'])) > 0 || $fichiersArray['name'][0] != "") {
+            $currentDate = date("Y/m/d/H/i/s");
+
+            // Début de la transaction
+            PDOBlogCfpt::getInstance()->beginTransaction();
+            try {
+                // on crée le post dans la base de données
+                $post = new Post();
+                $post->setCommentairePost($descriptionPost)
+                    ->setModificationDatePost($currentDate);
+                Post::UpdatePost($post);
+                $idPost = $_SESSION['idEditPost'];
+
+                // on crée les médias dans la base de données
+                $dirFile = "../assets/medias/";
+                foreach ($newImagesArray as $imageArray) {
+                    $randomName = Media::GenerateRandomImageName() . "." . explode("/", $imageArray['type'])[1];
+
+                    while (file_exists($dirFile . $randomName)) {
+                        $randomName = Media::GenerateRandomImageName() . "." . explode("/", $imageArray['type'])[1];
+                    }
+
+                    $filepath = $dirFile . $randomName;
+
+                    if (move_uploaded_file($imageArray['tmp_name'], $filepath)) {
+                        $media = new Media();
+                        $media->setTypeMedia($imageArray['type'])
+                            ->setNomFichierMedia($randomName)
+                            ->setCreationDate($currentDate)
+                            ->setModificationDate($currentDate)
+                            ->setIdPost($idPost);
+                        Media::AddMedia($media);
+                    } else {
+                        // si il y a un fichier qui ne se push pas rollback et cancel les requêtes
+                        PDOBlogCfpt::getInstance()->rollBack();
+                        $_SESSION['message'] = [
+                            'type' => "danger",
+                            'content' => "Une image n'a pas pu être publié !" . $tkt
+                        ];
+                        header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
+                    }
+                }
+            } catch (Exception $e) {
+                PDOBlogCfpt::getInstance()->rollBack();
+                $_SESSION['message'] = [
+                    'type' => "danger",
+                    'content' => "Une image n'a pas pu être publié !"
+                ];
+                header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
+            }
+        } else {
+            $_SESSION['message'] = [
+                'type' => "danger",
+                'content' => "Merci de choisir au moins une image pour le post !"
+            ];
+            header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
+        }
+
+        // on push les infos dans base de donnée avec le commit
+        PDOBlogCfpt::getInstance()->commit();
+
+        // message de success de création du post et des médias
+        $_SESSION['message'] = [
+            'type' => "success",
+            'content' => "Le post à bien été modifié et tous les fichiers ont été importés"
+        ];
+        header('Location: index.php');
+    } else {
+        // retourne un message d'erreur si les champs ne sonts pas remplis
+        $_SESSION['message'] = [
+            'type' => "danger",
+            'content' => "Merci de remplir tous les champs !"
+        ];
+        header('Location: index.php?uc=post&action=edit&idPost=' . $_SESSION['idEditPost']);
+    }
+
+
+    $_SESSION['idEditPost'] = null;
 }
