@@ -5,12 +5,12 @@ define('MAX_FILE_SIZE', 3);
 define('TOTAL_MAX_SIZE', 70);
 
 switch ($action) {
-        // affiche la page de post
+    // affiche la page de post
     case 'show':
         include 'vues/post_form.php';
         break;
 
-        // traite les données du formulaie (validation formulaire)
+    // traite les données du formulaie (validation formulaire)
     case 'validate':
         // récupéraion de la description
         $descriptionPost = filter_input(INPUT_POST, 'descriptionPost', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -21,7 +21,7 @@ switch ($action) {
         break;
 
 
-        // supprime un post
+    // supprime un post
     case 'delete':
         // récupération du post
         $idPost = filter_input(INPUT_GET, 'idPost', FILTER_SANITIZE_NUMBER_INT);
@@ -56,7 +56,7 @@ switch ($action) {
         header('Location: index.php');
         break;
 
-        // affiche le formulaire de modification d'un post
+    // affiche le formulaire de modification d'un post
     case 'edit':
         // récupération du post
         $idPost = filter_input(INPUT_GET, 'idPost', FILTER_SANITIZE_NUMBER_INT);
@@ -65,7 +65,7 @@ switch ($action) {
         include 'vues/editPost_form.php';
         break;
 
-        // valide le formulaire de modification de post
+    // valide le formulaire de modification de post
     case 'validateEdit':
         // récupéraion de la description
         $descriptionPost = filter_input(INPUT_POST, 'descriptionPost', FILTER_SANITIZE_STRING);
@@ -75,7 +75,7 @@ switch ($action) {
         createPost($descriptionPost, $fichiersArray);
         break;
 
-        // supprime un media dans le formulaire de modification de post
+    // supprime un media dans le formulaire de modification de post
     case 'deleteMedia':
         $idMedia = filter_input(INPUT_GET, 'idMedia', FILTER_SANITIZE_NUMBER_INT);
         $nomFichier = Media::GetMediaNameById($idMedia);
@@ -193,7 +193,22 @@ function createPost($descriptionPost, $fichiersArray)
 
                     $filepath = $dirFile . $randomName;
 
-                    if (move_uploaded_file($imageArray['tmp_name'], $filepath)) {
+                    list($w, $h) = getimagesize($imageArray["tmp_name"]);
+
+                    $newWidth = 500;
+                    $newHeight = 300;
+
+                    $newImage = null;
+
+                    if ($imageArray["type"] == IMAGETYPE_JPEG) {
+                        $newImage = imagecreatefromjpeg($imageArray["tmp_name"]);
+                    } else if ($imageArray["type"] == IMAGETYPE_PNG) {
+                        $newImage = imagecreatefrompng($imageArray["tmp_name"]);
+                    }
+
+                    $newImage = resize_image($newWidth, $newHeight, $newImage, $w, $h);
+
+                    if (save_image($newImage, $filepath, $imageArray["type"])) {
                         $media = new Media();
                         $media->setTypeMedia($imageArray['type'])
                             ->setNomFichierMedia($randomName)
@@ -247,4 +262,25 @@ function createPost($descriptionPost, $fichiersArray)
 
 
     $_SESSION['idEditPost'] = null;
+}
+
+function resize_image($new_width, $new_height, $image, $width, $height)
+{
+    $new_image = imagecreatetruecolor($new_width, $new_height);
+    imagecopyresampled($new_image, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+    return $new_image;
+}
+
+function save_image($new_image, $new_filename, $new_type = 'jpeg', $quality = 80)
+{
+    try {
+        if ($new_type == 'jpeg') {
+            imagejpeg($new_image, $new_filename, $quality);
+        } elseif ($new_type == 'png') {
+            imagepng($new_image, $new_filename);
+        }
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
 }
