@@ -24,8 +24,8 @@ async function reachUploadFunction() {
     xhr.send(data);
 
     xhr.onload = function () {
-        let responseObj = xhr.response;
-        console.log(responseObj);
+        console.log(this.responseText);
+        //location.href = "index.php?uc=home";
 
     };
 

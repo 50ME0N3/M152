@@ -229,4 +229,40 @@ class Media
         $result = $req->fetch();
         return $result->getCompteurMedia();
     }
+
+    public static function deleteAllFilesThatAreNotInBase(){
+        $req = PDOBlogCfpt::getInstance()->prepare("SELECT nomFichierMedia FROM media");
+        $req->execute(); // executer la requette
+        $result = $req->fetchALL(PDO::FETCH_ASSOC);
+        $dir = scandir("C:\\xampp\\htdocs\\M152\\assets\\medias");
+
+        foreach($dir as $file){
+            if($file != "." && $file != ".."){
+                $isInBase = false;
+                foreach($result as $fileInBase){
+                    if($file == $fileInBase['nomFichierMedia']){
+                        $isInBase = true;
+                    }
+                }
+
+                if(!$isInBase){
+                    unlink("C:\\xampp\\htdocs\\M152\\assets\\medias\\".$file);
+                    echo "Fichier supprimé : ".$file;
+                    echo "<br>";
+                }
+            }
+        }
+
+        foreach($result as $fileInBase){
+            if(!file_exists("C:\\xampp\\htdocs\\M152\\assets\\medias\\".$fileInBase['nomFichierMedia'])){
+                $req = PDOBlogCfpt::getInstance()->prepare("DELETE FROM media WHERE nomFichierMedia = :nomFichierMedia");
+                $req->bindParam(":nomFichierMedia", $fileInBase['nomFichierMedia']);
+                $req->execute();
+                echo "Fichier supprimé de la base : ".$fileInBase['nomFichierMedia'];
+                echo "<br>";
+            }
+        }
+        
+        
+    }
 }

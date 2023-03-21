@@ -29,6 +29,6 @@ if($_SESSION['message']['type'] != null){ ?>
 
         <input class="btn btn-success" type="submit" value="Créer le post">
     </form>
-    <button onclick="reachUploadFunction()">test ajax</button>
+    <button class="btn btn-primary" onclick="reachUploadFunction()">test ajax</button>
 </div>
 <script src="assets/js/uploadAjax.js"></script>
